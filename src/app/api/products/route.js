@@ -4,30 +4,7 @@ import Product from "@/models/Product";
 import { NextResponse } from "next/server";
 
 //Post Your Data
-export async function POST(request) {
-  const { searchParams } = new URL(request.url);
-  await connectDB();
-  const body = await request.json();
-  const doc = await Product.find({ productId: body.productId });
-  
-  if (doc.length > 0) {
-    return NextResponse.json({
-      success: false,
-      error: true,
-      message: "Already Exists!",
-    });
-  }
-  // insert doc
-  
-  const result = await Product.insertOne(body);
 
-  return NextResponse.json({
-    success: true,
-    error: false,
-    message: "Your Product Added",
-    result: result,
-  });
-}
 
 //Get Your Data
 export async function GET(request) {

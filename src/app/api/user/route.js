@@ -9,7 +9,6 @@ export async function POST(request) {
   await connectDB();
   const body = await request.json();
   const doc = await User.findOne({ email: body.email });
-  console.log(doc)
   
   if (doc) {
     return NextResponse.json({

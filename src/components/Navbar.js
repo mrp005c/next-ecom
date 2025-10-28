@@ -46,9 +46,14 @@ const Navbar = () => {
             {status === "authenticated" ? (
               <div className="flex-center">
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild className="cursor-pointer">
-                    <img
-                      className="object-fill rounded-full h-[50px] "
+                  <DropdownMenuTrigger
+                    asChild
+                    className="cursor-pointer relative h-12 w-12"
+                  >
+                    <Image
+                      height={50}
+                      width={50}
+                      className="object-cover rounded-full "
                       src={session.user.image || "/profilea.jpg"}
                       alt="image"
                     />
@@ -141,7 +146,7 @@ const Navbar = () => {
             <li>
               <Link
                 className="hover:bg-gray-400 rounded-md transition-all active:bg-gray-700 p-1"
-                href="/"
+                href="/#h"
               >
                 Home
               </Link>

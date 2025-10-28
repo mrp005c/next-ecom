@@ -63,41 +63,54 @@ const handler = NextAuth({
     // ...add more providers here
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = user.role;
-        token.id = user.id;
-      }
-      return token;
-    },
-
     async signIn({ user, account, profile }) {
       try {
-        await connectDB();
-        const existingUser = await User.findOne({ email: user.email });
-        if (existingUser) {
-          userid = existingUser._id;
+        if (user.email === process.env.ADMIN_EMAIL) {
+          user.id = process.env.ADMIN_PASS;
+          user.role = "admin";
+          user.image =
+            "https://images.unsplash.com/photo-1579389083078-4e7018379f7e?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170";
+
+          return true;
         }
+        await connectDB();
+        let existingUser = await User.findOne({ email: user.email });
+
         if (!existingUser) {
           // create minimal user from provider data; avoid plain default passwords in production
-          const add = await User.insertOne({
+          existingUser = await User.insertOne({
             name: user.name || "",
             email: user.email,
             image: user.image || "",
             password: null,
             // don't store insecure default password in prod; better set null or random string
           });
-          userid = add._id;
         }
+
+        user.id = existingUser._id.toString();
+        user.role = existingUser.role;
+        user.image = existingUser.image;
+
         return true;
       } catch (err) {
         console.error("signIn callback error:", err);
         return false;
       }
     },
+
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role;
+        token.id = user.id;
+        token.image = user.image;
+      }
+      return token;
+    },
+
     async session({ session, token }) {
       session.user.role = token.role;
-      session.user.id = userid;
+      session.user.id = token.id;
+      session.user.image = token.image;
       return session;
     },
   },

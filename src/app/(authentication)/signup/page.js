@@ -30,8 +30,6 @@ export default function CardDemo() {
     const formd = new FormData(e.target);
     const cp = formd.get("cpassword");
 
-    console.log(formData, cp);
-
     if (formData.password !== cp) {
       alert("password didn't match");
       return;
@@ -50,7 +48,6 @@ export default function CardDemo() {
       const res = await add.json();
 
       if (res.success) {
-        console.log(res.message);
         router.replace("/login");
       } else {
         alert(res.message);

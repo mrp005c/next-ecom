@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { notFound, useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -33,25 +34,26 @@ const Page = () => {
     }
   };
   useEffect(() => {
-    loadProduct();
+    const a = async () => {
+      loadProduct();
+    };
+    a();
   }, []);
   if (!success) {
     return notFound();
   }
   return (
     <div className=" container mx-auto bg-slate-50">
-      your product id is:
-      {params.id}
       <div className="flex-center">
         {item && (
           <div className="flex flex-col max-w-[890px] gap-4 w-full bg-gray-100 p-4 box-border rounded-lg transition-all hover:shadow-md shadow-blue-300  hover:translate-y-[calc(-2px)] ">
-            <div className="h-[200px] w-full z-10 relative bg-gray-200 rounded-lg">
+            <div className="h-[350px] w-full z-10 relative bg-gray-200 rounded-lg">
               <Image
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 loading="eager"
                 src={item.image || "/ecom.png"}
-                className="object-contain object-center rounded-lg"
+                className="object-cover object-center rounded-lg"
                 alt=""
               />
             </div>
@@ -72,6 +74,10 @@ const Page = () => {
             >
               {item.category}
             </p>
+            <div className="flex-around flex-wrap py-2">
+                  <Button disabled={!item.inStock} onClick={()=> console.log("added cart")}>Add To Cart</Button>
+                  <Button disabled={!item.inStock} onClick={()=> console.log("buy now")}>Buy Now</Button>
+                </div>
             <div className="flex-between">
               <div className="flex-center gap-2">
                 <p className="p-1 rounded-md bg-gray-300">

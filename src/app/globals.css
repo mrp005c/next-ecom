@@ -106,6 +106,9 @@ html{
 @utility primary-btn {
   @apply text-center px-3 py-2 rounded-2xl bg-bluebtn hover:bg-bluebtn-hover active:bg-bluebtn-active transition-all;
 }
+@utility sec-btn {
+  @apply px-5 py-3 rounded-md ring-2 ring-gray-600 font-bold bg-gray-50 hover:bg-gray-200 active:bg-gray-300 flex-center flex-col;
+}
 
 .dark {
   --background: oklch(0.145 0 0);

@@ -17,23 +17,24 @@ const Page = () => {
       headers: myHeaders,
       redirect: "follow",
     };
-try {
-    const data = await fetch("/api/products", requestOptions)
-    const res = await data.json()
-    if (res.success) {
-      setItems(res.result)
-    }else{
-      alert(res.message)
+    try {
+      const data = await fetch("/api/products", requestOptions);
+      const res = await data.json();
+      if (res.success) {
+        setItems(res.result);
+      } else {
+        alert(res.message);
+      }
+    } catch (error) {
+      console.log(error);
     }
-} catch (error) {
-  console.log(error)
-}
-  
-     
   };
 
   useEffect(() => {
-    loadProducts();
+    const a = async () => {
+      loadProducts();
+    };
+    a();
   }, []);
 
   return (
@@ -56,22 +57,21 @@ try {
                 className="flex flex-col max-w-[430px] w-full bg-gray-100 p-2 box-border rounded-lg transition-all hover:shadow-md shadow-blue-300  hover:translate-y-[calc(-2px)] "
               >
                 <div
-                  onClick={() => router.push(`/products/${item._id}`)}
-                  className="h-24 w-full z-10 relative cursor-pointer bg-gray-200 rounded-lg"
+                  onClick={() => router.push(`/products/${item.productId}`)}
+                  className="h-[250px] w-full z-10 relative cursor-pointer bg-gray-200 rounded-lg"
                 >
                   <Image
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     loading="eager"
-                    priority={false}
                     src={item.image || "/ecom.png"}
-                    className="object-contain object-center rounded-lg"
+                    className="object-cover object-center rounded-lg"
                     alt=""
                   />
                 </div>
                 <div className="flex-between">
                   <h4
-                    onClick={() => router.push(`/products/${item._id}`)}
+                    onClick={() => router.push(`/products/${item.productId}`)}
                     className="font-bold hover:underline underline-offset-2 cursor-pointer transition "
                   >
                     {item.name}
@@ -92,8 +92,18 @@ try {
                   {item.category}
                 </p>
                 <div className="flex-around flex-wrap py-2">
-                  <Button disabled={!item.inStock} onClick={()=> console.log("added cart")}>Add To Cart</Button>
-                  <Button disabled={!item.inStock} onClick={()=> console.log("buy now")}>Buy Now</Button>
+                  <Button
+                    disabled={!item.inStock}
+                    onClick={() => console.log("added cart")}
+                  >
+                    Add To Cart
+                  </Button>
+                  <Button
+                    disabled={!item.inStock}
+                    onClick={() => console.log("buy now")}
+                  >
+                    Buy Now
+                  </Button>
                 </div>
                 <div className="flex-between text-sm">
                   <div className="flex-center gap-2">
