@@ -54,8 +54,8 @@ const DashNav = () => {
   }
 
   return (
-    <div className="w-ful flex-between bg-gray-300 rounded-md container mx-auto px-3 py-4 flex-wrap">
-      <Toaster/>
+    <>
+      <Toaster />
       {/* diagram container  */}
       <Dialog open={openD} onOpenChange={setOpenD}>
         <DialogContent className="sm:max-w-[425px]">
@@ -110,45 +110,49 @@ const DashNav = () => {
           </form>
         </DialogContent>
       </Dialog>
-      <h1 className="text-2xl font-bold flex-center ">Dashboard</h1>
-      <div className=" bg-gray-100 p-2 rounded-md flex-between flex-wrap flex-col">
-        <div className="flex-center gap-3 ">
-          <Image
-            height={80}
-            width={80}
-            className="rounded-full "
-            src={session.user.image}
-            alt=""
-          />
-          <div className="flex flex-col w-full overflow-hidden text-ellipsis text-nowrap">
-            <span className="text-lg font-bold">{session.user.name}</span>
-            <span>{session.user.email}</span>
+      <div className="w-ful flex-between bg-gray-300 rounded-md container mx-auto px-3 py-4 flex-wrap">
+        <h1 className="text-2xl font-bold flex-center ">Dashboard</h1>
+        <div className=" bg-gray-100 p-2 rounded-md flex-between flex-wrap flex-col">
+          <div className="flex-center gap-3 ">
+            <div className=" min-h-20 min-w-20 relative">
+              <Image
+                fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="rounded-full min-h-20 min-w-20 object-cover object-center"
+                src={session.user.image}
+                alt=""
+              />
+            </div>
+            <div className="flex flex-col w-full overflow-hidden text-ellipsis text-nowrap">
+              <span className="text-lg font-bold">{session.user.name}</span>
+              <span>{session.user.email}</span>
+            </div>
+          </div>
+          <div className="flex-center flex-wrap gap-2">
+            <Button
+              className="cursor-pointer"
+              variant="outline"
+              onClick={() => handleEdit(session.user)}
+              type="button"
+            >
+              Edit Profile
+            </Button>
+            <Button
+              className="cursor-pointer"
+              onClick={() => signOut()}
+              type="button"
+            >
+              log Out
+            </Button>
           </div>
         </div>
-        <div className="flex-center flex-wrap gap-2">
-          <Button
-            className="cursor-pointer"
-            variant="outline"
-            onClick={() => handleEdit(session.user)}
-            type="button"
-          >
-            Edit Profile
-          </Button>
-          <Button
-            className="cursor-pointer"
-            onClick={() => signOut()}
-            type="button"
-          >
-            log Out
-          </Button>
-        </div>
-      </div>
-      {/* <div className="head h-12 ">{session.user.name}</div>
+        {/* <div className="head h-12 ">{session.user.name}</div>
           <div className="head h-12 ">
             {session.user.email}
           </div>
  */}
-    </div>
+      </div>
+    </>
   );
 };
 

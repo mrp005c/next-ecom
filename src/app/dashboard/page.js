@@ -1,8 +1,8 @@
 "use client";
 import { useSession, signOut } from "next-auth/react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { IoCartOutline } from "react-icons/io5";
 import { RiCoupon4Line } from "react-icons/ri";
 import { MdManageAccounts, MdOutlinePayment, MdSettings } from "react-icons/md";
@@ -10,13 +10,23 @@ import { MdManageAccounts, MdOutlinePayment, MdSettings } from "react-icons/md";
 const Page = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams()
+  const [tab, setTab] = useState(searchParams.get("tab"));
+
+    useEffect(() => {
+    let a = async () => {
+      setTab(() => searchParams.get("tab"));
+    };
+    a();
+  }, [router, searchParams]);
+
   if (status === "authenticated") {
     return (
       <div className="container mx-auto p-2 ">
         {/* other links  */}
         <div className=" flex-center gap-2 flex-wrap p-3 bg-gray-200 rounded-md">
           <button
-            className="sec-btn"
+            className={`${( tab === "profile" || !tab)? "bg-red-200": ""} sec-btn transition-all `}
             onClick={() => router.push("/dashboard?tab=profile")}
             type="button"
           >
@@ -24,7 +34,7 @@ const Page = () => {
             <span className="text-xs">Profile</span>
           </button>
           <button
-            className="sec-btn"
+            className={`${ tab === "cart"? "bg-red-200": ""} sec-btn transition-all `}
             onClick={() => router.push("/dashboard?tab=cart")}
             type="button"
           >
@@ -32,7 +42,7 @@ const Page = () => {
             <span className="text-xs">Cart</span>
           </button>
           <button
-            className="sec-btn"
+            className={`${ tab === "orders"? "bg-red-200": ""} sec-btn transition-all `}
             onClick={() => router.push("/dashboard?tab=orders")}
             type="button"
           >
@@ -40,7 +50,7 @@ const Page = () => {
             <span className="text-xs">Orders</span>
           </button>
           <button
-            className="sec-btn"
+            className={`${ tab === "coupon"? "bg-red-200": ""} sec-btn transition-all `}
             onClick={() => router.push("/dashboard?tab=coupon")}
             type="button"
           >
@@ -48,7 +58,7 @@ const Page = () => {
             <span className="text-xs">Coupon</span>
           </button>
           <button
-            className="sec-btn"
+            className={`${ tab === "setting"? "bg-red-200": ""} sec-btn transition-all `}
             onClick={() => router.push("/dashboard?tab=setting")}
             type="button"
           >

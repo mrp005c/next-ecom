@@ -12,7 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { IoLogoGithub, IoLogoGoogle } from "react-icons/io5";
 
@@ -20,6 +21,8 @@ export default function Page() {
   const { data: session, status } = useSession();
   const [formData, setFormData] = useState({});
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redUrl = searchParams.get("redurl");
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,7 +37,7 @@ export default function Page() {
     });
 
     if (!res.error) {
-      router.push("/dashboard"); // auto redirect, admin will be redirected later
+      router.push(`${decodeURI(redUrl)}`); // auto redirect, admin will be redirected later
     } else {
       alert(res.error);
     }
@@ -42,7 +45,7 @@ export default function Page() {
 
   useEffect(() => {
     if (status === "authenticated") {
-      return router.push("/dashboard");
+      return router.push(`${decodeURI(redUrl)}`);
     }
   }, [status, router]);
   if (status === "loading") {
@@ -58,13 +61,11 @@ export default function Page() {
             Enter your email below to login to your account
           </CardDescription>
           <CardAction>
-            <Button
-              className="cursor-pointer"
-              onClick={() => router.push("/signup")}
-              variant="link"
-            >
-              Sign Up
-            </Button>
+            <Link className="h-full w-full" href="/signup">
+              <Button className="cursor-pointer" variant="link">
+                Sign Up
+              </Button>
+            </Link>
           </CardAction>
         </CardHeader>
         <CardContent>
@@ -102,7 +103,7 @@ export default function Page() {
                 />
               </div>
             </div>
-            
+
             <Button type="submit" className="w-full my-3">
               Login
             </Button>

@@ -12,12 +12,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// A custom hook for showing confirm dialogs
 export function useConfirmDialog() {
   const [promise, setPromise] = useState(null);
+  const [dialogData, setDialogData] = useState({
+    title: "Are you sure?",
+    description: "This action cannot be undone.",
+    confirmText: "Confirm",
+    cancelText: "Cancel",
+  });
 
-  const confirm = () =>
+  // call confirm() and pass dynamic message and description
+  const confirm = (options = {}) =>
     new Promise((resolve) => {
+      setDialogData({
+        title: options.title || "Are you sure?",
+        description: options.description || "This action cannot be undone.",
+        confirmText: options.confirmText || "Confirm",
+        cancelText: options.cancelText || "Cancel",
+      });
       setPromise({ resolve });
     });
 
@@ -32,17 +44,15 @@ export function useConfirmDialog() {
     <AlertDialog open={!!promise} onOpenChange={() => handleClose(false)}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete your product.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{dialogData.title}</AlertDialogTitle>
+          <AlertDialogDescription>{dialogData.description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => handleClose(false)}>
-            Cancel
+            {dialogData.cancelText}
           </AlertDialogCancel>
           <AlertDialogAction onClick={() => handleClose(true)}>
-            Delete
+            {dialogData.confirmText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

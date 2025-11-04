@@ -1,14 +1,34 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import Image from "next/image";
-import { notFound, useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { notFound, useParams, usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
+import { useDispatch } from "react-redux";
+import { useSession } from "next-auth/react";
+import { fetchCart } from "@/store/cartSlice";
 
 const Page = () => {
   const params = useParams();
   const router = useRouter();
   const [item, setItem] = useState();
   const [success, setSuccess] = useState(true);
+  const [imageIndex, setImageIndex] = useState(0);
+  const { data: session } = useSession();
+  const dispatch = useDispatch();
+  const pathname = usePathname();
+
+  const handleCartLoad = async () => {
+    if (session) {
+      const userId = session.user.id;
+      dispatch(fetchCart(userId));
+    }
+  };
+
   const loadProduct = async () => {
     const myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
@@ -39,64 +59,167 @@ const Page = () => {
     };
     a();
   }, []);
+
+  let startX = 0;
+
+  const handleTouchStart = (e) => {
+    startX = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+    const endX = e.changedTouches[0].clientX;
+    if (startX - endX > 50) nextImage(); // swipe left
+    if (endX - startX > 50) prevImage(); // swipe right
+  };
+
+  const nextImage = () => setImageIndex((c) => (c + 1) % item.image.length);
+  const prevImage = () =>
+    setImageIndex((c) => (c - 1 + item.image.length) % item.image.length);
+
+  const handleAddToCart = async (newCartItem) => {
+    if (!session) {
+      toast.info("Please Login First.");
+      router.push(`/login?redurl=${encodeURIComponent(pathname)}`);
+      // addToGuestCart(newCartItem)
+      return;
+    }
+
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    const withoutid = { ...newCartItem };
+    delete withoutid._id;
+
+    const raw = JSON.stringify({
+      email: session.user.email,
+      userId: session.user.id,
+      products: withoutid,
+    });
+
+    const requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: raw,
+      redirect: "follow",
+    };
+    try {
+      const add = await fetch("/api/cart", requestOptions);
+      const res = await add.json();
+      if (res.success) {
+        toast.success(res.message);
+        handleCartLoad();
+      } else {
+        toast.error(res.message);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   if (!success) {
     return notFound();
   }
   return (
-    <div className=" container mx-auto bg-slate-50">
-      <div className="flex-center">
-        {item && (
-          <div className="flex flex-col max-w-[890px] gap-4 w-full bg-gray-100 p-4 box-border rounded-lg transition-all hover:shadow-md shadow-blue-300  hover:translate-y-[calc(-2px)] ">
-            <div className="h-[350px] w-full z-10 relative bg-gray-200 rounded-lg">
-              <Image
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                loading="eager"
-                src={item.image || "/ecom.png"}
-                className="object-cover object-center rounded-lg"
-                alt=""
-              />
-            </div>
-            <div className="flex-between text-3xl">
-              <h4 className="font-bold hover:underline underline-offset-2 transition ">
-                {item.name}
-              </h4>
-              <h4 className="font-bold bg-gray-300 px-2 rounded-lg">
-                Price: {item.price}$
-              </h4>
-            </div>
-            {/* <h4 className="font-bold text-nowrap overflow-hidden text-ellipsis">{item.name}</h4> */}
-            <p
-              onClick={() =>
-                router.push(`/products/category/${item.category.toLowerCase()}`)
-              }
-              className="hover:underline cursor-pointer transition-all w-fit text-sm from-gray-700"
-            >
-              {item.category}
-            </p>
-            <div className="flex-around flex-wrap py-2">
-                  <Button disabled={!item.inStock} onClick={()=> console.log("added cart")}>Add To Cart</Button>
-                  <Button disabled={!item.inStock} onClick={()=> console.log("buy now")}>Buy Now</Button>
-                </div>
-            <div className="flex-between">
-              <div className="flex-center gap-2">
-                <p className="p-1 rounded-md bg-gray-300">
-                  Rating:{item.rating}
-                </p>
-                <p className="p-1 rounded-md bg-gray-300">
-                  ProductId:{item.productId}
-                </p>
+    <>
+      <Toaster />
+      {item ? (
+        <div className=" container mx-auto bg-slate-50">
+          <div className="flex-center">
+            <div className="flex flex-col max-w-[890px] gap-4 w-full bg-gray-100 p-4 box-border rounded-lg transition-all hover:shadow-md shadow-blue-300  hover:translate-y-[calc(-2px)] ">
+              <div
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                className="h-[350px] w-full z-10 relative bg-gray-200 rounded-lg flex-center"
+              >
+                <Image
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  loading="eager"
+                  src={item.image[imageIndex] || "/ecom.png"}
+                  className="object-cover object-center rounded-lg"
+                  alt=""
+                />
+                <Button
+                  onClick={nextImage}
+                  variant={"outline"}
+                  size={"icon-lg"}
+                  className={` absolute right-2 ${
+                    item.image.length <= 1 ? "hidden" : ""
+                  }`}
+                >
+                  <IoIosArrowForward />
+                </Button>
+                <Button
+                  onClick={prevImage}
+                  variant={"outline"}
+                  size={"icon-lg"}
+                  className={` absolute left-2 ${
+                    item.image.length <= 1 ? "hidden" : ""
+                  }`}
+                >
+                  <IoIosArrowBack />
+                </Button>
               </div>
-              {item.inStock ? (
-                <p className="p-1 rounded-md bg-gray-300">In Stock</p>
-              ) : (
-                <p className="p-1 rounded-md bg-red-300">Out of Stock</p>
-              )}
+              <div className="flex-between text-3xl">
+                <h4 className="font-bold hover:underline underline-offset-2 transition ">
+                  {item.name}
+                </h4>
+                <h4 className="font-bold bg-gray-300 px-2 rounded-lg">
+                  Price: {item.price}$
+                </h4>
+              </div>
+              {/* <h4 className="font-bold text-nowrap overflow-hidden text-ellipsis">{item.name}</h4> */}
+              <Link
+                href={`/products/category/${item.category.toLowerCase()}`}
+                className="hover:underline cursor-pointer transition-all w-fit text-sm from-gray-700"
+              >
+                {item.category}
+              </Link>
+              <div className="flex-around flex-wrap py-2">
+                <Button
+                  disabled={!item.inStock}
+                  onClick={() => handleAddToCart(item)}
+                >
+                  Add To Cart
+                </Button>
+                <Button
+                  disabled={!item.inStock}
+                  onClick={() => console.log("buy now")}
+                >
+                  Buy Now
+                </Button>
+              </div>
+              <div className="flex-between">
+                <div className="flex-center gap-2">
+                  <p className="p-1 rounded-md bg-gray-300">
+                    Rating:{item.rating}
+                  </p>
+                  <p className="p-1 rounded-md bg-gray-300">
+                    ProductId:{item.productId}
+                  </p>
+                </div>
+                {item.inStock ? (
+                  <p className="p-1 rounded-md bg-gray-300">In Stock</p>
+                ) : (
+                  <p className="p-1 rounded-md bg-red-300">Out of Stock</p>
+                )}
+              </div>
             </div>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      ) : (
+        <div className="flex flex-col max-w-[890px] py-4  mx-auto space-y-3">
+          <Skeleton className="h-[355px] w-full bg-gray-300 rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-3/4  bg-gray-200" />
+            <Skeleton className="h-6 w-3/5  bg-gray-200" />
+          </div>
+          <div className="space-y-2 flex flex-around">
+            <Skeleton className="h-6 w-[200px] bg-gray-200" />
+            <Skeleton className="h-6 w-[180px]  bg-gray-200" />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

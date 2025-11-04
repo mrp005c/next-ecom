@@ -4,6 +4,11 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SessoinWrapper from "@/components/SessoinWrapper";
 import { connection } from "next/server";
+import { ThemeProvider } from "@/components/modules/themeProvider";
+import { Provider } from "react-redux";
+import { store } from "@/store/store";
+import StoreWrapper from "@/components/StoreWrapper";
+import AdminHeader from "@/components/AdminHeader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,14 +28,18 @@ export const metadata = {
 export default async function RootLayout({ children }) {
   await connection();
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <SessoinWrapper>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen scroll-smooth`}
         >
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <StoreWrapper>
+            <ThemeProvider>
+              <Navbar />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </ThemeProvider>
+          </StoreWrapper>
         </body>
       </SessoinWrapper>
     </html>

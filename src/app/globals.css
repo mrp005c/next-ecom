@@ -91,6 +91,10 @@ html{
   scroll-behavior: smooth;
 }
 
+.cart-menu.open{
+  @apply translate-y-0;
+}
+
 @utility flex-center {
   @apply flex justify-center items-center;
 }
@@ -107,7 +111,7 @@ html{
   @apply text-center px-3 py-2 rounded-2xl bg-bluebtn hover:bg-bluebtn-hover active:bg-bluebtn-active transition-all;
 }
 @utility sec-btn {
-  @apply px-5 py-3 rounded-md ring-2 ring-gray-600 font-bold bg-gray-50 hover:bg-gray-200 active:bg-gray-300 flex-center flex-col;
+  @apply px-5 py-3 rounded-md ring-2 ring-gray-600 font-bold bg-gray-50 hover:bg-red-300 active:bg-gray-300 flex-center flex-col;
 }
 
 .dark {

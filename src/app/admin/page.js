@@ -4,7 +4,6 @@ import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import { MdDelete, MdEdit } from "react-icons/md";
 import {
   Dialog,
   DialogClose,
@@ -15,24 +14,53 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { useConfirmDialog } from "@/components/oui/ConfirmDialog";
 import { IoAdd, IoAddCircle, IoReload } from "react-icons/io5";
+import AdProduct from "@/components/modules/AdminProduct";
+import SkeletonProduct from "@/components/modules/SkeletonProduct";
+import SkeletonPage from "@/components/modules/SkeletonPage";
+import LoadingOverlay from "@/components/modules/LoadingOverlay";
+import UserControl from "@/components/modules/UserControl";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchProducts } from "@/store/productSlice";
+// Messages tab
+import MessageModule from "@/components/modules/MessageModule";
+import { useDialog } from "@/components/modules/AlertDialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const AdminPage = () => {
   const { data: session } = useSession();
   const router = useRouter();
+  const dispatch = useDispatch();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState(searchParams.get("tab"));
-  const [items, setItems] = useState();
-  const [openD, setOpenD] = useState(false);
-  const [openAdd, setOpenAdd] = useState(false)
-  const [formData, setFormData] = useState({});
-  const [ConfirmDialog, confirm] = useConfirmDialog();
+  const [dbInfo, setDbInfo] = useState();
+  const [users, setUsers] = useState([]);
+  const [openAdd, setOpenAdd] = useState(false);
+  const [formData, setFormData] = useState({ image: [""] });
+  const [edit, setEdit] = useState(false);
+  const [isloading, setIsloading] = useState(false);
+  const { items, loading, error } = useSelector((state) => state.products);
+  // Messages tab
+  const [messages, setMessages] = useState([]);
+  const [unreadMessage, setUnreadMessage] = useState();
+  const [readMessage, setReadMessage] = useState();
+  const [ConfirmAlertDialog, alert, confirm] = useDialog();
 
+  // tab load and analytics load
   useEffect(() => {
     let a = async () => {
       setTab(() => searchParams.get("tab"));
@@ -40,86 +68,58 @@ const AdminPage = () => {
     a();
   }, [router, searchParams]);
 
-  // tab products
-  const loadProducts = async () => {
-    const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
+  // tab change effect
+  useEffect(() => {
+    if (tab === "users" && users.length === 0) {
+      loadUsers(true);
+    }
+    if (tab === "products" && items.length === 0) {
+      loadProducts();
+    }
+    if (tab === "messages" && messages.length === 0) {
+      loadMessages(true);
+    }
+  }, [tab]);
 
+  // tab home content
+  const analytics = async () => {
+    setIsloading(true);
     const requestOptions = {
       method: "GET",
-      headers: myHeaders,
       redirect: "follow",
     };
     try {
-      const data = await fetch("/api/products", requestOptions);
-      const res = await data.json();
+      const f = await fetch("/api/admin/analytics", requestOptions);
+      const res = await f.json();
       if (res.success) {
-        setItems(res.result);
-      } else {
-        alert(res.message);
+        setDbInfo(res.result);
       }
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsloading(false);
     }
   };
-
   useEffect(() => {
     const a = async () => {
-      loadProducts();
+      analytics();
     };
     a();
   }, []);
 
-  //  edit product
-  const handleEdit = async (e) => {
-    setFormData({
-      id: e._id,
-      name: e.name,
-      image: e.image,
-      price: e.price,
-      rating: e.rating,
-      category: e.category,
-      productId: e.productId,
-      inStock: e.inStock,
-    });
-    setOpenD(true);
+  /* Product tab content
+  and other handler */
+  // load product
+  const loadProducts = async () => {
+    dispatch(fetchProducts());
   };
-
+  // form change handler
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-
-    const raw = JSON.stringify(formData);
-
-    const requestOptions = {
-      method: "PUT",
-      headers: myHeaders,
-      body: raw,
-      redirect: "follow",
-    };
-    try {
-      const upd = await fetch("/api/products/product", requestOptions);
-      const res = await upd.json();
-      if (res.success) {
-        toast.success(res.message);
-        setOpenD(false);
-        setFormData({});
-        loadProducts();
-      } else {
-        toast.error(res.message);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   // Add product
   const handleSubmitAdd = async (e) => {
+    setIsloading(true);
     e.preventDefault();
 
     const myHeaders = new Headers();
@@ -139,172 +139,147 @@ const AdminPage = () => {
       if (res.success) {
         toast.success(res.message);
         setOpenAdd(false);
-        setFormData({});
+        setFormData({ image: [""] });
         loadProducts();
       } else {
         toast.error(res.message);
       }
     } catch (error) {
       console.log(error);
+    } finally {
+      setIsloading(false);
     }
   };
-  // Delete product
-  const handleDelete = async (e) => {
-    const ok = await confirm();
-    if (!ok) {
-      return;
-    }
+
+  // users info
+  const loadUsers = async (loadLoayout) => {
+    setIsloading(loadLoayout);
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+
     const requestOptions = {
-      method: "DELETE",
+      method: "GET",
+      headers: myHeaders,
       redirect: "follow",
     };
     try {
-      const del = await fetch(`/api/products/product?id=${e}`, requestOptions);
-      const res = await del.json();
-
+      const data = await fetch(`/api/user`, requestOptions);
+      const res = await data.json();
       if (res.success) {
-        toast.success(res.message);
-        loadProducts();
-      } else {
-        toast.error(res.message);
+        let short = res.result;
+        short.sort((a, b) => a.role.localeCompare(b.role));
+        setUsers(short);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsloading(false);
+    }
+  };
+
+  /* loadMessages
+  and other handler */
+  const loadMessages = async (loadLoayout) => {
+    setIsloading(loadLoayout);
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+
+    const requestOptions = {
+      method: "GET",
+      headers: myHeaders,
+      redirect: "follow",
+    };
+    try {
+      const data = await fetch(`/api/message`, requestOptions);
+      const res = await data.json();
+      if (res.success) {
+        let short = res.result.reverse();
+        setMessages(short);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsloading(false);
+    }
+  };
+  // filter the messages
+  useEffect(() => {
+    const u = async () => {
+      if (messages && messages.length > 0) {
+        setUnreadMessage(messages.filter((e) => !e.readStatus));
+        setReadMessage(messages.filter((e) => e.readStatus));
+      }
+    };
+    u();
+  }, [messages]);
+  // Read Message or Unread handler
+  const handleDoneMessage = async (id, isRead) => {
+    // return
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    const raw = JSON.stringify({
+      readStatus: !isRead,
+    });
+    const requestOptions = {
+      method: "PUT",
+      headers: myHeaders,
+      body: raw,
+      redirect: "follow",
+    };
+    try {
+      const data = await fetch(`/api/message?id=${id}`, requestOptions);
+      const res = await data.json();
+      if (res.success) {
+        loadMessages(false);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  //Delete Message handler
+  const handleDeleteMessage = async (id) => {
+    const ok = await confirm({
+      title: "Delete The Message?",
+      confirmText: "Delete",
+    });
+    if (!ok) {
+      return;
+    }
+    // return
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+
+    const requestOptions = {
+      method: "DELETE",
+      headers: myHeaders,
+      redirect: "follow",
+    };
+    try {
+      const data = await fetch(`/api/message?id=${id}`, requestOptions);
+      const res = await data.json();
+      if (res.success) {
+        loadMessages(false);
       }
     } catch (error) {
       console.log(error);
     }
   };
 
-  if (!session) return <div>Loading...</div>;
+  if (!session)
+    return (
+      <div className="container mx-auto">
+        {/* <LoadingOverlay show={true} message={"Loading Page..."}/> */}
+        <SkeletonPage />
+      </div>
+    );
   return (
     <div className=" max-w-[1980px] mx-auto">
+      {ConfirmAlertDialog}
       <Toaster />
-      {ConfirmDialog}
-      {/* diagram container  */}
-      <Dialog open={openD} onOpenChange={setOpenD}>
-        <DialogContent className="sm:max-w-[425px]">
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle>Edit Product</DialogTitle>
-              <DialogDescription>
-                Make changes to your productId here. Click save when you&apos;re
-                done.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4">
-              <div className="grid gap-3">
-                <Label htmlFor="name-1">Name</Label>
-                <Input
-                  id="name-1"
-                  onChange={handleChange}
-                  value={formData.name || ""}
-                  name="name"
-                  placeholder="Product Name"
-                />
-              </div>
-              <div className="grid gap-3">
-                <Label htmlFor="image">Image</Label>
-                <Input
-                  id="image"
-                  onChange={handleChange}
-                  value={formData.image || ""}
-                  name="image"
-                  placeholder="Product Image Link"
-                />
-              </div>
-               <div className="grid gap-3">
-                <Label htmlFor="proid">Product Id</Label>
-                <Input
-                  id="proid"
-                  onChange={handleChange}
-                  value={formData.productId || ""}
-                  name="productId"
-                  placeholder="Product Id"
-                />
-              </div>
-              <div className="flex gap-2">
-                <div className="grid gap-2">
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    onChange={handleChange}
-                    value={formData.price || ""}
-                    id="price"
-                    name="price"
-                    type="number"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="price">Ratings</Label>
-                  <Input
-                    onChange={handleChange}
-                    type="number"
-                    value={formData.rating || ""}
-                    id="price"
-                    name="rating"
-                  />
-                </div>
-              </div>
-
-              <div className="flex-between flex-wrap gap-2">
-                <div className="flex-center">
-                  <Label htmlFor="instock">In Stock</Label>
-                  <input
-                    onChange={(e) =>
-                      setFormData({ ...formData, inStock: e.target.checked })
-                    }
-                    className="h-8 rounded-sm w-5 "
-                    checked={formData.inStock || false}
-                    id="instock"
-                    name="inStock"
-                    type="checkbox"
-                  />
-                </div>
-                <div className="flex ">
-                  <Label htmlFor="category">Category</Label>
-                  <select
-                    className="ring-1 ring-gray-200"
-                    value={formData.category || ""}
-                    onChange={handleChange}
-                    name="category"
-                    placeholder="Select One"
-                    id="category"
-                  >
-                    <option value="accessories">Accessories</option>
-                    <option value="electronics">Electronics</option>
-                    <option value="fashion">Fashion</option>
-                    <option value="home-appliances">Home Appliances</option>
-                    <option value="beauty-health">Beauty & Health</option>
-                    <option value="sports-outdoors">Sports & Outdoors</option>
-                    <option value="toys-games">Toys & Games</option>
-                    <option value="groceries">Groceries</option>
-                    <option value="books">Books</option>
-                    <option value="furniture">Furniture</option>
-                    <option value="mobile">Mobile Phones</option>
-                    <option value="computers">Computers & Laptops</option>
-                    <option value="watches">Watches</option>
-                    <option value="shoes">Shoes</option>
-                    <option value="bags">Bags</option>
-                    <option value="camera">Cameras & Photography</option>
-                    <option value="kitchen">Kitchen Essentials</option>
-                    <option value="automotive">Automotive</option>
-                    <option value="gaming">Gaming</option>
-                    <option value="pets">Pet Supplies</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
-              {/* <Button  type="submit" >Save changes</Button> */}
-              <Button type="submit">Save changes</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
+      <LoadingOverlay show={isloading} message={"Loading... Please Wait!"} />
       {/* add */}
       <Dialog open={openAdd} onOpenChange={setOpenAdd}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-h-full overflow-auto my-3">
           <form onSubmit={handleSubmitAdd}>
             <DialogHeader>
               <DialogTitle>Add Product</DialogTitle>
@@ -322,19 +297,39 @@ const AdminPage = () => {
                   value={formData.name || ""}
                   name="name"
                   placeholder="Product Name"
+                  required
                 />
               </div>
               <div className="grid gap-3">
                 <Label htmlFor="image">Image</Label>
-                <Input
-                  id="image"
-                  onChange={handleChange}
-                  value={formData.image || ""}
-                  name="image"
-                  placeholder="Product Image Link"
-                />
+                {formData.image &&
+                  formData.image.map((e, i) => (
+                    <Input
+                      key={i}
+                      id={`image-${i}`}
+                      onChange={(e) => {
+                        const newImage = [...formData.image];
+                        newImage[i] = e.target.value;
+                        setFormData({ ...formData, image: newImage });
+                      }}
+                      value={e || ""}
+                      name="image"
+                      placeholder="Product Image Link"
+                    />
+                  ))}
+                <Button
+                  variant={"outline"}
+                  size={"icon"}
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, image: [...formData.image, ""] })
+                  }
+                  className={"flex-center"}
+                >
+                  <IoAddCircle />
+                </Button>
               </div>
-              <div className="grid gap-3">
+              {/* <div className="grid gap-3">
                 <Label htmlFor="proid">Product Id</Label>
                 <Input
                   id="proid"
@@ -342,8 +337,9 @@ const AdminPage = () => {
                   value={formData.productId || ""}
                   name="productId"
                   placeholder="Product Id"
+                  required
                 />
-              </div>
+              </div> */}
               <div className="flex gap-2">
                 <div className="grid gap-2">
                   <Label htmlFor="price">Price</Label>
@@ -353,6 +349,7 @@ const AdminPage = () => {
                     id="price"
                     name="price"
                     type="number"
+                    required
                   />
                 </div>
                 <div className="grid gap-2">
@@ -375,43 +372,68 @@ const AdminPage = () => {
                       setFormData({ ...formData, inStock: e.target.checked })
                     }
                     className="h-8 rounded-sm w-5 "
-                    checked={formData.inStock || false}
+                    checked={formData.inStock ?? true}
                     id="instock"
                     name="inStock"
                     type="checkbox"
                   />
                 </div>
-                <div className="flex ">
+                <div className="flex gap-2">
                   <Label htmlFor="category">Category</Label>
-                  <select
-                    className="ring-1 ring-gray-200"
+
+                  <Select
                     value={formData.category || ""}
-                    onChange={handleChange}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, category: value })
+                    }
                     name="category"
-                    placeholder="Select One"
+                    placeholder="Category"
                     id="category"
                   >
-                    <option value="accessories">Accessories</option>
-                    <option value="electronics">Electronics</option>
-                    <option value="fashion">Fashion</option>
-                    <option value="home-appliances">Home Appliances</option>
-                    <option value="beauty-health">Beauty & Health</option>
-                    <option value="sports-outdoors">Sports & Outdoors</option>
-                    <option value="toys-games">Toys & Games</option>
-                    <option value="groceries">Groceries</option>
-                    <option value="books">Books</option>
-                    <option value="furniture">Furniture</option>
-                    <option value="mobile">Mobile Phones</option>
-                    <option value="computers">Computers & Laptops</option>
-                    <option value="watches">Watches</option>
-                    <option value="shoes">Shoes</option>
-                    <option value="bags">Bags</option>
-                    <option value="camera">Cameras & Photography</option>
-                    <option value="kitchen">Kitchen Essentials</option>
-                    <option value="automotive">Automotive</option>
-                    <option value="gaming">Gaming</option>
-                    <option value="pets">Pet Supplies</option>
-                  </select>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Category</SelectLabel>
+                        <SelectItem value="uncategorized">
+                          Uncategorized
+                        </SelectItem>
+                        <SelectItem value="accessories">Accessories</SelectItem>
+                        <SelectItem value="electronics">Electronics</SelectItem>
+                        <SelectItem value="fashion">Fashion</SelectItem>
+                        <SelectItem value="home-appliances">
+                          Home Appliances
+                        </SelectItem>
+                        <SelectItem value="beauty-health">
+                          Beauty & Health
+                        </SelectItem>
+                        <SelectItem value="sports-outdoors">
+                          Sports & Outdoors
+                        </SelectItem>
+                        <SelectItem value="toys-games">Toys & Games</SelectItem>
+                        <SelectItem value="groceries">Groceries</SelectItem>
+                        <SelectItem value="books">Books</SelectItem>
+                        <SelectItem value="furniture">Furniture</SelectItem>
+                        <SelectItem value="mobile">Mobile Phones</SelectItem>
+                        <SelectItem value="computers">
+                          Computers & Laptops
+                        </SelectItem>
+                        <SelectItem value="watches">Watches</SelectItem>
+                        <SelectItem value="shoes">Shoes</SelectItem>
+                        <SelectItem value="bags">Bags</SelectItem>
+                        <SelectItem value="camera">
+                          Cameras & Photography
+                        </SelectItem>
+                        <SelectItem value="kitchen">
+                          Kitchen Essentials
+                        </SelectItem>
+                        <SelectItem value="automotive">Automotive</SelectItem>
+                        <SelectItem value="gaming">Gaming</SelectItem>
+                        <SelectItem value="pets">Pet Supplies</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
@@ -425,195 +447,334 @@ const AdminPage = () => {
           </form>
         </DialogContent>
       </Dialog>
-
-      <div className="head p-3 bg-gray-200 flex-between ">
+      {/* Admin Panel Header */}
+      <div className="head p-3 bg-gray-200 flex-between flex-wrap">
         <h1 className="text-2xl font-bold mb-2">Admin Panel</h1>
-        <div className="bg-gray-100 rounded-md px-3 py-2 font-bold flex-center flex-col ">
-          <span> Welcome, {session.user.name}</span>
-          <button
-            variant="destructive"
-            className="font-light px-3 rounded-md bg-red-500 hover:bg-red-400 active:bg-red-700 transition-all w-fit"
-            onClick={() => signOut()}
-          >
-            Logout
-          </button>
+        <div className="bg-gray-100 rounded-md px-3 py-2 font-bold flex-center relative gap-3">
+          <Image
+            height={80}
+            width={80}
+            className="rounded-full  object-cover h-20 w-20"
+            src={session.user.image || "/profilea.jpg"}
+            alt=""
+          />
+          <div className="flex flex-col">
+            <span className="font-bold text-lg">
+              Welcome, {session.user.name}
+            </span>
+            <span className="font-light text-sm">{session.user.email}</span>
+
+            <Button
+              variant="destructive"
+              className="font-semibold px-3 rounded-md bg-red-500 hover:bg-red-400 active:bg-red-700 transition-all w-fit"
+              onClick={() => signOut()}
+            >
+              Logout
+            </Button>
+          </div>
         </div>
       </div>
-      <div className="cont p-2 flex gap-2">
+      <div className="cont p-2 flex gap-2 flex-col sm:flex-row">
         {/* tabs  */}
-        <div className="tabs max-w-[200px] w-full h-fit gap-1 flex-center flex-col">
-          <h3 className="flex-center w-full text-lg font-semibold bg-gray-300 rounded-md">
+        <div className="tabs sm:max-w-[200px]  sm:w-full h-fit gap-1 flex-wrap flex-center sm:flex-col">
+          <h3 className="flex-center sm:w-full  text-lg font-semibold bg-gray-300 rounded-md">
             Quick Tabs
           </h3>
-          <Button
-            onClick={() => router.push("/admin?tab=home")}
-            variant="secondary"
-            className="w-full hover:bg-gray-200"
-          >
-            Home
-          </Button>
-          <Button
-            onClick={() => router.push("/admin?tab=products")}
-            variant="secondary"
-            className="w-full hover:bg-gray-200"
-          >
-            Products
-          </Button>
-          <Button
-            onClick={() => router.push("/admin?tab=users")}
-            variant="secondary"
-            className="w-full hover:bg-gray-200"
-          >
-            Users
-          </Button>
-          <Button
-            onClick={() => router.push("/admin?tab=messages")}
-            variant="secondary"
-            className="w-full hover:bg-gray-200"
-          >
-            Messages
-          </Button>
-          <Button
-            onClick={() => router.push("/admin?tab=orders")}
-            variant="secondary"
-            className="w-full hover:bg-gray-200"
-          >
-            Orders
-          </Button>
-          <Button
-            onClick={() => router.push("/admin?tab=reports")}
-            variant="secondary"
-            className="w-full hover:bg-gray-200"
-          >
-            Reports
-          </Button>
-          <Button
-            onClick={() => router.push("/admin?tab=catalouge")}
-            variant="secondary"
-            className="w-full hover:bg-gray-200"
-          >
-            Catalouge
-          </Button>
+          <div className="gap-1 w-full flex-wrap flex-center sm:flex-col">
+            <Button
+              onClick={() => router.push("/admin?tab=home")}
+              variant="secondary"
+              // className={`w-full hover:bg-gray-200 ${tab === "home"? "bg-red-200": ""}`}
+              className={`sm:w-full  hover:bg-gray-200 ${
+                tab === "home" || !tab ? "bg-red-200" : ""
+              }`}
+            >
+              Home
+            </Button>
+            <Button
+              onClick={() => router.push("/admin?tab=products")}
+              variant="secondary"
+              className={`sm:w-full hover:bg-gray-200 ${
+                tab === "products" ? "bg-red-200" : ""
+              }`}
+            >
+              Products
+            </Button>
+            <Button
+              onClick={() => router.push("/admin?tab=users")}
+              variant="secondary"
+              className={`sm:w-full  hover:bg-gray-200 ${
+                tab === "users" ? "bg-red-200" : ""
+              }`}
+            >
+              Users
+            </Button>
+            <Button
+              onClick={() => router.push("/admin?tab=messages")}
+              variant="secondary"
+              className={`sm:w-full  hover:bg-gray-200 ${
+                tab === "messages" ? "bg-red-200" : ""
+              }`}
+            >
+              Messages
+            </Button>
+            <Button
+              onClick={() => router.push("/admin?tab=orders")}
+              variant="secondary"
+              className={`sm:w-full  hover:bg-gray-200 ${
+                tab === "orders" ? "bg-red-200" : ""
+              }`}
+            >
+              Orders
+            </Button>
+            <Button
+              onClick={() => router.push("/admin?tab=reports")}
+              variant="secondary"
+              className={`sm:w-full  hover:bg-gray-200 ${
+                tab === "reports" ? "bg-red-200" : ""
+              }`}
+            >
+              Reports
+            </Button>
+            <Button
+              onClick={() => router.push("/admin?tab=catalouge")}
+              variant="secondary"
+              className={`sm:w-full  hover:bg-gray-200 ${
+                tab === "catalouge" ? "bg-red-200" : ""
+              }`}
+            >
+              Catalouge
+            </Button>
+          </div>
         </div>
 
         {/* {container } */}
-        <div className="flex-1 bg-gray-100 rounded-md p-2">
-          <div className="">
-
-            {/* home tab  */}
-            {(tab === "home" || !tab) && (
-              <h2 className="text-lg font-bold ">
-                HOME
-              </h2>
-            )}
-
-            {/* Products tab */}
-            {tab === "products" && (
-              <>
-                <div className="flex-between">
-                  <h2 className="text-lg font-bold ">
-                    {tab ? tab.toUpperCase() : "HOME"}
-                  </h2>
-                  <div className="buttons flex-center flex-wrap gap-2">
-                  <Button onClick={()=> {setOpenAdd(true)
-                    if (formData.id) {
-                      setFormData({})
-                    }
-                  }} variant="outline" className="">
-                    <IoAdd /> Add New
-                  </Button>
-                  <Button variant="outline" className="font-bold text-2xl">
-                    <IoReload />
-                  </Button>
+        <div className="flex-1 bg-gray-50 rounded-md p-2">
+          {/* home tab  */}
+          {(tab === "home" || !tab) && (
+            <>
+              <div className="flex-between bg-violet-100 p-2 rounded-md">
+                <h1 className="text-2xl font-bold ">Home</h1>
+                <Button
+                  size={"icon"}
+                  onClick={analytics}
+                  variant="outline"
+                  className="font-bold text-2xl"
+                >
+                  <IoReload />
+                </Button>
+              </div>
+              {dbInfo && (
+                <div className="container mx-auto p-4 flex-center gap-3 flex-wrap">
+                  {/* Products here */}
+                  <div className="message bg-gray-300 h-40 w-40 rounded-full ring-2 space-y-3 ring-gray-400 flex-center flex-col">
+                    <h3 className="text-xl font-bold ">Products</h3>
+                    <div className="flex flex-col p-2 bg-gray-200 rounded-md">
+                      <span>Total: {dbInfo.product}</span>
+                    </div>
+                  </div>
+                  {/* Order here */}
+                  <div className="message bg-gray-300 h-40 w-40 rounded-full ring-2 space-y-3 ring-gray-400 flex-center flex-col">
+                    <h3 className="text-xl font-bold ">Orders</h3>
+                    <div className="flex flex-col p-2 bg-gray-200 rounded-md">
+                      <span>Total: {dbInfo.order}</span>
+                    </div>
+                  </div>
+                  {/* user here */}
+                  <div className="message bg-gray-300 h-40 w-40 rounded-full ring-2 space-y-3 ring-gray-400 flex-center flex-col">
+                    <h3 className="text-xl font-bold ">Users</h3>
+                    <div className="flex flex-col p-2 bg-gray-200 rounded-md">
+                      <span>Admin: {dbInfo.user.admin}</span>
+                      <span>User: {dbInfo.user.user}</span>
+                      <span>Total: {dbInfo.user.user + dbInfo.user.admin}</span>
+                    </div>
+                  </div>
+                  {/* Messages here */}
+                  <div className="message bg-gray-300 h-40 w-40 rounded-full ring-2 space-y-3 ring-gray-400 flex-center flex-col">
+                    <h3 className="text-xl font-bold ">Messages</h3>
+                    <div className="flex flex-col p-2 bg-gray-200 rounded-md">
+                      <span>Read: {dbInfo.message.read}</span>
+                      <span>Unread: {dbInfo.message.unread}</span>
+                      <span>
+                        Total: {dbInfo.message.unread + dbInfo.message.read}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex justify-center  items-stretch flex-wrap gap-3 text-black px-3 py-2">
-                  {items &&
-                    items.map((item) => {
-                      return (
-                        <div
-                          key={item._id}
-                          className="flex justify-start items-start flex-col min-w-[180px] max-w-[180px] w-full flex-1 hover:bg-gray-100 bg-gray-200 p-2 box-border rounded-lg transition-all hover:shadow-md shadow-blue-300  hover:translate-y-[calc(-2px)] "
-                        >
-                          <div className="buttons flex-around text-2xl w-full py-2 rounded-md ">
-                            <button
-                              onClick={() => handleEdit(item)}
-                              className="p-2 rounded-full flex-center bg-gray-300 hover:bg-gray-200 active:bg-gray-400 transition-all"
-                              type="button"
-                            >
-                              <MdEdit />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(item._id)}
-                              className="p-2 rounded-full flex-center bg-gray-300 hover:bg-gray-200 active:bg-gray-400 transition-all"
-                              type="button"
-                            >
-                              <MdDelete />
-                            </button>
-                          </div>
-                          <div
-                            onClick={() => router.push(`/products/${item.productId}`)}
-                            className="h-24 w-full z-10 relative cursor-pointer bg-gray-200 rounded-lg"
-                          >
-                            <Image
-                              fill
-                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                              loading="eager"
-                              src={item.image || "/ecom.png"}
-                              className="object-cover h-full w-full object-center rounded-lg"
-                              alt=""
-                            />
-                          </div>
-                          <div className="flex-between">
-                            <h4
-                              onClick={() =>
-                                router.push(`/products/${item.productId}`)
-                              }
-                              className="font-bold hover:underline underline-offset-2 cursor-pointer transition "
-                            >
-                              {item.name}
-                            </h4>
-                            <h4 className="font-bold bg-gray-300 px-2 rounded-lg">
-                              ${item.price}
-                            </h4>
-                          </div>
-                          {/* <h4 className="font-bold text-nowrap overflow-hidden text-ellipsis">{item.name}</h4> */}
-                          <p
-                            onClick={() =>
-                              router.push(
-                                `/products/category/${item.category.toLowerCase()}`
-                              )
-                            }
-                            className="hover:underline cursor-pointer transition-all w-fit text-sm from-gray-700"
-                          >
-                            {item.category}
-                          </p>
-                          <div className="flex-between text-[10px] flex-wrap">
-                            <div className="flex-center flex-wrap">
-                              <p className="p-1 rounded-md bg-gray-300">
-                                Rating:{item.rating}
-                              </p>
-                              <p className="p-1 rounded-md bg-gray-300 overflow-hidden text-ellipsis text-nowrap">
-                                Id:{item.productId}
-                              </p>
-                            </div>
-                            {item.inStock ? (
-                              <p className="p-1 rounded-md bg-gray-300">
-                                In Stock
-                              </p>
-                            ) : (
-                              <p className="p-1 rounded-md bg-red-300">
-                                Out of Stock
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+              )}
+            </>
+          )}
+
+          {/* Products tab */}
+          {tab === "products" && (
+            <div className="space-y-3">
+              <div className="flex-between bg-violet-100 p-2 rounded-md">
+                <h2 className="text-2xl font-bold ">Products</h2>
+                <div className="buttons flex-center flex-wrap gap-2">
+                  <Button
+                    onClick={() => {
+                      setOpenAdd(true);
+                    }}
+                    variant="outline"
+                    className=""
+                  >
+                    <IoAdd /> Add New
+                  </Button>
+                  <Button
+                    size={"icon"}
+                    onClick={loadProducts}
+                    variant="outline"
+                    className="font-bold text-2xl"
+                  >
+                    <IoReload />
+                  </Button>
                 </div>
-              </>
-            )}
-          </div>
+              </div>
+              {items && !loading ? (
+                <div className="flex justify-center  items-stretch flex-wrap gap-3 text-black px-3 box-border py-2">
+                  {items.map((item) => {
+                    return (
+                      <AdProduct
+                        loadProducts={loadProducts}
+                        key={item.productId}
+                        item={item}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <SkeletonProduct className="bg-gray-400" />
+                // <div>rakib</div>
+              )}
+            </div>
+          )}
+
+          {/* Users tab */}
+          {tab === "users" && (
+            <div className="space-y-3">
+              <div className="flex-between bg-violet-100 p-2 rounded-md">
+                <h1 className="text-2xl font-bold ">Users</h1>
+                <Button
+                  size={"icon"}
+                  onClick={() => loadUsers(true)}
+                  variant="outline"
+                  className="font-bold text-2xl"
+                >
+                  <IoReload />
+                </Button>
+              </div>
+              <div className="flex flex-col items-stretch w-fit mx-auto gap-2">
+                {users.length > 0
+                  ? users.map((user) => (
+                      <UserControl key={user._id} user={user} />
+                    ))
+                  : Array.from("rakib").map((v, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center space-x-4 p-3 border rounded-lg"
+                      >
+                        <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-3 w-12" />
+                          </div>
+                          <Skeleton className="h-3 w-3/4" />
+                        </div>
+                        <div className="flex gap-2 space-y-1">
+                          <Skeleton className="h-6 w-6 rounded" />
+                          <Skeleton className="h-6 w-6 rounded" />
+                        </div>
+                      </div>
+                    ))}
+              </div>
+            </div>
+          )}
+
+          {tab === "messages" && (
+            <div>
+              <div className="flex-between bg-violet-100 p-2 rounded-md">
+                <h1 className="text-2xl font-bold ">Messages</h1>
+                <Button
+                  size={"icon"}
+                  onClick={() => loadMessages(true)}
+                  variant="outline"
+                  className="font-bold text-2xl"
+                >
+                  <IoReload />
+                </Button>
+              </div>
+              <Tabs defaultValue="unreadMessages" className="">
+                <div className="flex-center flex-wrap">
+                  <TabsList className={"flex-center flex-wrap"}>
+                    <TabsTrigger value="unreadMessages">Unread</TabsTrigger>
+                    <TabsTrigger value="readMessages">Read</TabsTrigger>
+                    <TabsTrigger value="allMessages">All</TabsTrigger>
+                  </TabsList>
+                </div>
+                <div className=" rounded-lg transition-all">
+                  <TabsContent value="unreadMessages">
+                    <div className="space-y-3">
+                      <h2 className=" font-bold text-xl">Unread Messages</h2>
+                      {unreadMessage && unreadMessage.length > 0 ? (
+                        unreadMessage.map((message) => (
+                          <MessageModule
+                            key={message._id}
+                            message={message}
+                            handleDeleteMessage={handleDeleteMessage}
+                            handleDoneMessage={handleDoneMessage}
+                          />
+                        ))
+                      ) : (
+                        <h2 className="text-center font-bold text-3xl">
+                          No Unread Message !
+                        </h2>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="readMessages">
+                    <div className="space-y-3">
+                      <h2 className=" font-bold text-xl">Read Messages</h2>
+                      {readMessage && readMessage.length > 0 ? (
+                        readMessage.map((message) => (
+                          <MessageModule
+                            key={message._id}
+                            message={message}
+                            handleDeleteMessage={handleDeleteMessage}
+                            handleDoneMessage={handleDoneMessage}
+                          />
+                        ))
+                      ) : (
+                        <h2 className="text-center font-bold text-3xl">
+                          No Read Message !
+                        </h2>
+                      )}
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="allMessages">
+                    <div className="space-y-3">
+                      <h2 className=" font-bold text-xl">All Messages</h2>
+                      {messages && messages.length > 0 ? (
+                        messages.map((message) => (
+                          <MessageModule
+                            key={message._id}
+                            message={message}
+                            handleDeleteMessage={handleDeleteMessage}
+                            handleDoneMessage={handleDoneMessage}
+                          />
+                        ))
+                      ) : (
+                        <h2 className="text-center font-bold text-3xl">
+                          No Message !
+                        </h2>
+                      )}
+                    </div>
+                  </TabsContent>
+                </div>
+              </Tabs>
+            </div>
+          )}
         </div>
       </div>
     </div>

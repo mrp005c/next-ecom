@@ -15,11 +15,14 @@ import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { IoLogoGithub, IoLogoGoogle } from "react-icons/io5";
+import { useDialog } from "@/components/modules/AlertDialog";
+import Link from "next/link";
 
 export default function CardDemo() {
   const { status } = useSession();
   const router = useRouter();
   const [formData, setFormData] = useState({});
+  const [ConfirmAlertDialog, alert, confirm] = useDialog()  
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -31,7 +34,7 @@ export default function CardDemo() {
     const cp = formd.get("cpassword");
 
     if (formData.password !== cp) {
-      alert("password didn't match");
+      alert({title: "Password Didn't Match!"});
       return;
     }
     const myHeaders = new Headers();
@@ -50,7 +53,7 @@ export default function CardDemo() {
       if (res.success) {
         router.replace("/login");
       } else {
-        alert(res.message);
+        alert({title : res.message});
       }
     } catch (error) {
       console.log(error);
@@ -64,6 +67,7 @@ export default function CardDemo() {
 
   return (
     <div className="flex-center p-4">
+            {ConfirmAlertDialog}
       <Card className="w-full max-w-sm bg-gray-100">
         <CardHeader>
           <CardTitle>Sign Up your account</CardTitle>
@@ -72,13 +76,11 @@ export default function CardDemo() {
             account
           </CardDescription>
           <CardAction>
-            <Button
-              className="cursor-pointer"
-              onClick={() => router.push("/login")}
-              variant="link"
-            >
-              Log in
-            </Button>
+            <Link href="/login">
+              <Button className="cursor-pointer" variant="link">
+                Log in
+              </Button>
+            </Link>
           </CardAction>
         </CardHeader>
         <CardContent>
