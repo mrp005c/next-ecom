@@ -5,7 +5,6 @@ import { RxCross2 } from "react-icons/rx";
 import Link from "next/link";
 
 const CartProductItem = ({ item, handleRomoveFromCart }) => {
-
   return (
     <div className="flex items-center gap-2 bg-gray-200 w-full relative max-w-[500px] hover:bg-violet-200 p-2 rounded-sm transition-all">
       <Link
@@ -14,6 +13,7 @@ const CartProductItem = ({ item, handleRomoveFromCart }) => {
       >
         <Image
           fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className="object-cover object-center rounded-sm"
           src={item.image[0] ?? "/econ/png"}
           alt=""

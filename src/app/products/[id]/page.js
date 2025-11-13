@@ -11,6 +11,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { useDispatch } from "react-redux";
 import { useSession } from "next-auth/react";
 import { fetchCart } from "@/store/cartSlice";
+// css
+import styles from "./id.module.css";
 
 const Page = () => {
   const params = useParams();
@@ -18,6 +20,10 @@ const Page = () => {
   const [item, setItem] = useState();
   const [success, setSuccess] = useState(true);
   const [imageIndex, setImageIndex] = useState(0);
+
+  // scroll image
+  const [startX, setStartX] = useState(0);
+  const [endX, setEndX] = useState(0);
   const { data: session } = useSession();
   const dispatch = useDispatch();
   const pathname = usePathname();
@@ -60,17 +66,16 @@ const Page = () => {
     a();
   }, []);
 
-  let startX = 0;
-
   const handleTouchStart = (e) => {
-    startX = e.touches[0].clientX;
+    setStartX(e.touches[0].clientX);
   };
 
   const handleTouchEnd = (e) => {
-    const endX = e.changedTouches[0].clientX;
+    setEndX(e.changedTouches[0].clientX);
     if (startX - endX > 50) nextImage(); // swipe left
     if (endX - startX > 50) prevImage(); // swipe right
   };
+
 
   const nextImage = () => setImageIndex((c) => (c + 1) % item.image.length);
   const prevImage = () =>
@@ -124,11 +129,14 @@ const Page = () => {
       {item ? (
         <div className=" container mx-auto bg-slate-50">
           <div className="flex-center">
-            <div className="flex flex-col max-w-[890px] gap-4 w-full bg-gray-100 p-4 box-border rounded-lg transition-all hover:shadow-md shadow-blue-300  hover:translate-y-[calc(-2px)] ">
+            <div className="flex flex-col max-w-[890px] gap-4 w-full bg-gray-100 p-4 box-border rounded-lg transition-all  ">
               <div
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
-                className="h-[350px] w-full z-10 relative bg-gray-200 rounded-lg flex-center"
+                className="h-[350px] w-full z-10 relative bg-gray-200 rounded-lg flex-center select-none"
+                // onDragStart={(e) => e.preventDefault()} // disable drag
+                draggable="false" // disable image dragging
+                style={{ userSelect: "none" }}
               >
                 <Image
                   fill
@@ -137,27 +145,36 @@ const Page = () => {
                   src={item.image[imageIndex] || "/ecom.png"}
                   className="object-cover object-center rounded-lg"
                   alt=""
+                  onDragStart={(e) => e.preventDefault()} // disable drag
+                  draggable="false" // disable image dragging
+                  style={{ userSelect: "none" }}
                 />
-                <Button
-                  onClick={nextImage}
-                  variant={"outline"}
-                  size={"icon-lg"}
-                  className={` absolute right-2 ${
-                    item.image.length <= 1 ? "hidden" : ""
-                  }`}
+                <div
+                  className={`relative z-30 w-full h-full flex-center ${styles.hoverp}`}
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
                 >
-                  <IoIosArrowForward />
-                </Button>
-                <Button
-                  onClick={prevImage}
-                  variant={"outline"}
-                  size={"icon-lg"}
-                  className={` absolute left-2 ${
-                    item.image.length <= 1 ? "hidden" : ""
-                  }`}
-                >
-                  <IoIosArrowBack />
-                </Button>
+                  <Button
+                    onClick={nextImage}
+                    variant={"outline"}
+                    size={"icon-lg"}
+                    className={` absolute right-2 ${
+                      item.image.length <= 1 ? "hidden" : ""
+                    } ${styles.pnbuttons}`}
+                  >
+                    <IoIosArrowForward />
+                  </Button>
+                  <Button
+                    onClick={prevImage}
+                    variant={"outline"}
+                    size={"icon-lg"}
+                    className={` absolute left-2 ${
+                      item.image.length <= 1 ? "hidden" : ""
+                    } ${styles.pnbuttons}`}
+                  >
+                    <IoIosArrowBack />
+                  </Button>
+                </div>
               </div>
               <div className="flex-between text-3xl">
                 <h4 className="font-bold hover:underline underline-offset-2 transition ">

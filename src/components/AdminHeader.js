@@ -18,7 +18,7 @@ const AdminHeader = () => {
             Site
           </Link>
         </h3>
-        <div className="text-xs">
+        <div className="text-xs overflow-hidden text-ellipsis">
           <Link href={"/dashboard"}>{session.user.email}</Link>
         </div>
       </div>

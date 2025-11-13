@@ -40,6 +40,7 @@ import { fetchProducts } from "@/store/productSlice";
 import MessageModule from "@/components/modules/MessageModule";
 import { useDialog } from "@/components/modules/AlertDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import OrderItem from "@/components/modules/OrderItem";
 
 const AdminPage = () => {
   const { data: session } = useSession();
@@ -47,6 +48,7 @@ const AdminPage = () => {
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState(searchParams.get("tab"));
+  // data load container
   const [dbInfo, setDbInfo] = useState();
   const [users, setUsers] = useState([]);
   const [openAdd, setOpenAdd] = useState(false);
@@ -58,15 +60,13 @@ const AdminPage = () => {
   const [messages, setMessages] = useState([]);
   const [unreadMessage, setUnreadMessage] = useState();
   const [readMessage, setReadMessage] = useState();
+  // orders tab
+  const [orders, setOrders] = useState([]);
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [confirmedOrders, setConfirmedOrders] = useState([]);
+  const [deliveredOrders, setDeliveredOrders] = useState([]);
   const [ConfirmAlertDialog, alert, confirm] = useDialog();
 
-  // tab load and analytics load
-  useEffect(() => {
-    let a = async () => {
-      setTab(() => searchParams.get("tab"));
-    };
-    a();
-  }, [router, searchParams]);
 
   // tab change effect
   useEffect(() => {
@@ -78,6 +78,9 @@ const AdminPage = () => {
     }
     if (tab === "messages" && messages.length === 0) {
       loadMessages(true);
+    }
+    if (tab === "orders" && orders.length === 0) {
+      loadOrders();
     }
   }, [tab]);
 
@@ -212,6 +215,18 @@ const AdminPage = () => {
     };
     u();
   }, [messages]);
+
+  // filter the orders
+  useEffect(() => {
+    const u = async () => {
+      if (orders && orders.length > 0) {
+        setPendingOrders(orders.filter((e) => e.status === "pending"));
+        setConfirmedOrders(orders.filter((e) => e.status === "confirmed"));
+        setDeliveredOrders(orders.filter((e) => e.status === "delivered"));
+      }
+    };
+    u();
+  }, [orders]);
   // Read Message or Unread handler
   const handleDoneMessage = async (id, isRead) => {
     // return
@@ -262,6 +277,30 @@ const AdminPage = () => {
       }
     } catch (error) {
       console.log(error);
+    }
+  };
+
+  // Load orders
+  const loadOrders = async () => {
+    setIsloading(true);
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+
+    const requestOptions = {
+      method: "GET",
+      headers: myHeaders,
+      redirect: "follow",
+    };
+    try {
+      const data = await fetch(`/api/orders`, requestOptions);
+      const res = await data.json();
+      if (res.success) {
+        setOrders(res.result);
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsloading(false);
     }
   };
 
@@ -482,7 +521,10 @@ const AdminPage = () => {
           </h3>
           <div className="gap-1 w-full flex-wrap flex-center sm:flex-col">
             <Button
-              onClick={() => router.push("/admin?tab=home")}
+              onClick={() => {
+                setTab("home");
+                router.push("/admin?tab=home");
+              }}
               variant="secondary"
               // className={`w-full hover:bg-gray-200 ${tab === "home"? "bg-red-200": ""}`}
               className={`sm:w-full  hover:bg-gray-200 ${
@@ -492,7 +534,10 @@ const AdminPage = () => {
               Home
             </Button>
             <Button
-              onClick={() => router.push("/admin?tab=products")}
+              onClick={() => {
+                setTab("products");
+                router.push("/admin?tab=products");
+              }}
               variant="secondary"
               className={`sm:w-full hover:bg-gray-200 ${
                 tab === "products" ? "bg-red-200" : ""
@@ -501,7 +546,10 @@ const AdminPage = () => {
               Products
             </Button>
             <Button
-              onClick={() => router.push("/admin?tab=users")}
+              onClick={() => {
+                setTab("users");
+                router.push("/admin?tab=users");
+              }}
               variant="secondary"
               className={`sm:w-full  hover:bg-gray-200 ${
                 tab === "users" ? "bg-red-200" : ""
@@ -510,7 +558,10 @@ const AdminPage = () => {
               Users
             </Button>
             <Button
-              onClick={() => router.push("/admin?tab=messages")}
+              onClick={() => {
+                setTab("messages");
+                router.push("/admin?tab=messages");
+              }}
               variant="secondary"
               className={`sm:w-full  hover:bg-gray-200 ${
                 tab === "messages" ? "bg-red-200" : ""
@@ -519,7 +570,10 @@ const AdminPage = () => {
               Messages
             </Button>
             <Button
-              onClick={() => router.push("/admin?tab=orders")}
+              onClick={() => {
+                setTab("orders");
+                router.push("/admin?tab=orders");
+              }}
               variant="secondary"
               className={`sm:w-full  hover:bg-gray-200 ${
                 tab === "orders" ? "bg-red-200" : ""
@@ -527,23 +581,18 @@ const AdminPage = () => {
             >
               Orders
             </Button>
+
             <Button
-              onClick={() => router.push("/admin?tab=reports")}
+              onClick={() => {
+                setTab("settings");
+                router.push("/admin?tab=settings");
+              }}
               variant="secondary"
               className={`sm:w-full  hover:bg-gray-200 ${
-                tab === "reports" ? "bg-red-200" : ""
+                tab === "settings" ? "bg-red-200" : ""
               }`}
             >
-              Reports
-            </Button>
-            <Button
-              onClick={() => router.push("/admin?tab=catalouge")}
-              variant="secondary"
-              className={`sm:w-full  hover:bg-gray-200 ${
-                tab === "catalouge" ? "bg-red-200" : ""
-              }`}
-            >
-              Catalouge
+              Settings
             </Button>
           </div>
         </div>
@@ -565,34 +614,34 @@ const AdminPage = () => {
                 </Button>
               </div>
               {dbInfo && (
-                <div className="container mx-auto p-4 flex-center gap-3 flex-wrap">
+                <div className="container mx-auto p-4 flex-center gap-3 flex-wrap text-xs">
                   {/* Products here */}
                   <div className="message bg-gray-300 h-40 w-40 rounded-full ring-2 space-y-3 ring-gray-400 flex-center flex-col">
                     <h3 className="text-xl font-bold ">Products</h3>
-                    <div className="flex flex-col p-2 bg-gray-200 rounded-md">
+                    <div className="flex flex-col p-1 bg-gray-200 rounded-md">
                       <span>Total: {dbInfo.product}</span>
                     </div>
                   </div>
                   {/* Order here */}
                   <div className="message bg-gray-300 h-40 w-40 rounded-full ring-2 space-y-3 ring-gray-400 flex-center flex-col">
                     <h3 className="text-xl font-bold ">Orders</h3>
-                    <div className="flex flex-col p-2 bg-gray-200 rounded-md">
+                    <div className="flex flex-col p-1 bg-gray-200 rounded-md">
                       <span>Total: {dbInfo.order}</span>
                     </div>
                   </div>
                   {/* user here */}
                   <div className="message bg-gray-300 h-40 w-40 rounded-full ring-2 space-y-3 ring-gray-400 flex-center flex-col">
                     <h3 className="text-xl font-bold ">Users</h3>
-                    <div className="flex flex-col p-2 bg-gray-200 rounded-md">
-                      <span>Admin: {dbInfo.user.admin}</span>
+                    <div className="flex flex-col p-1 bg-gray-200 rounded-md">
                       <span>User: {dbInfo.user.user}</span>
+                      <span>Admin: {dbInfo.user.admin}</span>
                       <span>Total: {dbInfo.user.user + dbInfo.user.admin}</span>
                     </div>
                   </div>
                   {/* Messages here */}
                   <div className="message bg-gray-300 h-40 w-40 rounded-full ring-2 space-y-3 ring-gray-400 flex-center flex-col">
                     <h3 className="text-xl font-bold ">Messages</h3>
-                    <div className="flex flex-col p-2 bg-gray-200 rounded-md">
+                    <div className="flex flex-col p-1 bg-gray-200 rounded-md">
                       <span>Read: {dbInfo.message.read}</span>
                       <span>Unread: {dbInfo.message.unread}</span>
                       <span>
@@ -772,6 +821,65 @@ const AdminPage = () => {
                     </div>
                   </TabsContent>
                 </div>
+              </Tabs>
+            </div>
+          )}
+
+          {/* Orders Tab */}
+          {tab === "orders" && (
+            <div>
+              <div className="flex-between bg-violet-100 p-2 rounded-md">
+                <h1 className="text-2xl font-bold ">Orders</h1>
+                <Button
+                  size={"icon"}
+                  onClick={() => loadOrders()}
+                  variant="outline"
+                  className="font-bold text-2xl"
+                >
+                  <IoReload />
+                </Button>
+              </div>
+              <Tabs defaultValue="pending">
+                <div className="flex-center p-2">
+                  <TabsList className={"flex-center flex-wrap"}>
+                    <TabsTrigger value="pending">Pending</TabsTrigger>
+                    <TabsTrigger value="confirmed">Confirmed</TabsTrigger>
+                    <TabsTrigger value="delivered">Delivered</TabsTrigger>
+                    <TabsTrigger value="all">All</TabsTrigger>
+                  </TabsList>
+                </div>
+                <TabsContent value="pending">
+                  <div className="p-3 space-y-3 flex-center flex-col">
+                    {pendingOrders &&
+                      pendingOrders.map((item) => (
+                        <OrderItem key={item._id} item={item} />
+                      ))}
+                  </div>
+                </TabsContent>
+                <TabsContent value="confirmed">
+                  <div className="p-3 space-y-3 flex-center flex-col">
+                    {confirmedOrders &&
+                      confirmedOrders.map((item) => (
+                        <OrderItem key={item._id} item={item} />
+                      ))}
+                  </div>
+                </TabsContent>
+                <TabsContent value="delivered">
+                  <div className="p-3 space-y-3 flex-center flex-col">
+                    {deliveredOrders &&
+                      deliveredOrders.map((item) => (
+                        <OrderItem key={item._id} item={item} />
+                      ))}
+                  </div>
+                </TabsContent>
+                <TabsContent value="all">
+                  <div className="p-3 space-y-3 flex-center flex-col">
+                    {orders &&
+                      orders.map((item) => (
+                        <OrderItem key={item._id} item={item} />
+                      ))}
+                  </div>
+                </TabsContent>
               </Tabs>
             </div>
           )}

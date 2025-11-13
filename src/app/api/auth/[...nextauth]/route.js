@@ -68,9 +68,6 @@ const handler = NextAuth({
         if (user.email === process.env.ADMIN_EMAIL) {
           user.id = process.env.ADMIN_PASS;
           user.role = "admin";
-          user.image =
-            "https://images.unsplash.com/photo-1579389083078-4e7018379f7e?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=1170";
-
           return true;
         }
         await connectDB();
@@ -90,6 +87,8 @@ const handler = NextAuth({
         user.id = existingUser._id.toString();
         user.role = existingUser.role;
         user.image = existingUser.image;
+        user.phone = existingUser.phone;
+        user.address = existingUser.address;
 
         return true;
       } catch (err) {
@@ -98,11 +97,19 @@ const handler = NextAuth({
       }
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      if (trigger === "update" && session?.user) {
+        token.name = session.user.name;
+        token.image = session.user.image;
+        token.phone = session.user.phone;
+        token.address = session.user.address;
+      }
       if (user) {
         token.role = user.role;
         token.id = user.id;
         token.image = user.image;
+        token.phone = user.phone;
+        token.address = user.address;
       }
       return token;
     },
@@ -111,6 +118,8 @@ const handler = NextAuth({
       session.user.role = token.role;
       session.user.id = token.id;
       session.user.image = token.image;
+      session.user.phone = token.phone;
+      session.user.address = token.address;
       return session;
     },
   },

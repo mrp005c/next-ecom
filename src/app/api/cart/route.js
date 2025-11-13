@@ -64,12 +64,12 @@ export async function DELETE(request) {
   await connectDB();
 
   // Delete doc
-  const result = await Cart.findByIdAndDelete(id);
+  const result = await Cart.findOneAndDelete({userId: id});
 
   return NextResponse.json({
     success: true,
     error: false,
-    message: "Message Deleted Successful",
+    message: "Cart Deleted Successful",
     // result: result,
   });
 }

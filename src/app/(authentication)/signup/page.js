@@ -22,7 +22,7 @@ export default function CardDemo() {
   const { status } = useSession();
   const router = useRouter();
   const [formData, setFormData] = useState({});
-  const [ConfirmAlertDialog, alert, confirm] = useDialog()  
+  const [ConfirmAlertDialog, alert, confirm] = useDialog();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,7 +34,7 @@ export default function CardDemo() {
     const cp = formd.get("cpassword");
 
     if (formData.password !== cp) {
-      alert({title: "Password Didn't Match!"});
+      alert({ title: "Password Didn't Match!" });
       return;
     }
     const myHeaders = new Headers();
@@ -53,7 +53,7 @@ export default function CardDemo() {
       if (res.success) {
         router.replace("/login");
       } else {
-        alert({title : res.message});
+        alert({ title: res.message });
       }
     } catch (error) {
       console.log(error);
@@ -67,7 +67,7 @@ export default function CardDemo() {
 
   return (
     <div className="flex-center p-4">
-            {ConfirmAlertDialog}
+      {ConfirmAlertDialog}
       <Card className="w-full max-w-sm bg-gray-100">
         <CardHeader>
           <CardTitle>Sign Up your account</CardTitle>
@@ -116,6 +116,28 @@ export default function CardDemo() {
                   value={formData.email || ""}
                   name="email"
                   placeholder="m@example.com"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  type="number"
+                  onChange={handleChange}
+                  value={formData.phone || ""}
+                  name="phone"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  type="text"
+                  onChange={handleChange}
+                  value={formData.address || ""}
+                  name="address"
                   required
                 />
               </div>

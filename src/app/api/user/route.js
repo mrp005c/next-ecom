@@ -30,6 +30,21 @@ export async function POST(request) {
   });
 }
 
+//Update Your Data
+export async function PUT(request) {
+//   const { searchParams } = new URL(request.url);
+  await connectDB();
+  const body = await request.json();
+  const result = await User.updateOne({ email: body.email }, body);
+
+  return NextResponse.json({
+    success: true,
+    error: false,
+    message: "Profile Updated, Please Login again to see the change you made",
+    // result: result,
+  });
+}
+
 
 //Get Your Data
 export async function GET(request) {

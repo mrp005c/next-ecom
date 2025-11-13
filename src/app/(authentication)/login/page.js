@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { signIn, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useDialog } from "@/components/modules/AlertDialog";
 import { useEffect, useState } from "react";
 import { IoLogoGithub, IoLogoGoogle } from "react-icons/io5";
 
@@ -23,6 +24,7 @@ export default function Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redUrl = searchParams.get("redurl");
+  const [ConfirmAlertDialog, alert, confirm] = useDialog();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -39,21 +41,25 @@ export default function Page() {
     if (!res.error) {
       router.push(`${decodeURI(redUrl)}`); // auto redirect, admin will be redirected later
     } else {
-      alert(res.error);
+      alert({title: res.error});
     }
   };
 
   useEffect(() => {
     if (status === "authenticated") {
-      return router.push(`${decodeURI(redUrl)}`);
+      if (redUrl) {
+        return router.push(`${decodeURI(redUrl)}`);
+      }
+      return router.push("/")
     }
   }, [status, router]);
   if (status === "loading") {
     return <div>Loading your page</div>;
   }
   return (
-    <div className="flex-center p-4">
-      <input type="email" name="" id="" />
+    <div className="flex-center p-2 md:p-4">
+      {ConfirmAlertDialog}
+      {/* <input type="email" name="" id="" /> */}
       <Card className="w-full max-w-sm bg-gray-100">
         <CardHeader>
           <CardTitle>Login to your account</CardTitle>

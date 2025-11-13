@@ -20,17 +20,18 @@ import {
 import Image from "next/image";
 
 const DashNav = () => {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const [formData, setFormData] = useState({});
   const [openD, setOpenD] = useState(false);
   const router = useRouter();
 
   const handleEdit = async (e) => {
     setFormData({
-      id: e.id,
       email: e.email,
       name: e.name,
       image: e.image,
+      phone: e.phone,
+      address: e.address,
     });
     setOpenD(true);
   };
@@ -40,7 +41,45 @@ const DashNav = () => {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(formData);
+    const form = new FormData(e.target);
+    const cpass = form.get("cpassword") ?? "";
+    if ((cpass || formData.password) && cpass != formData.password) {
+      toast.error("Password doesn't match");
+      return;
+    }
+
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    const raw = JSON.stringify(formData);
+    const requestOptions = {
+      method: "PUT",
+      headers: myHeaders,
+      body: raw,
+      redirect: "follow",
+    };
+    try {
+      const add = await fetch("/api/user", requestOptions);
+      const res = await add.json();
+
+      if (res.success) {
+        toast.success(res.message);
+        await update({
+          user: {
+            ...session.user,
+            name: formData.name,
+            image: formData.image,
+            phone: formData.phone,
+            address: formData.address,
+          },
+        });
+        setFormData({});
+        setOpenD(false);
+      } else {
+        alert({ title: res.message });
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   useEffect(() => {
@@ -58,7 +97,7 @@ const DashNav = () => {
       <Toaster />
       {/* diagram container  */}
       <Dialog open={openD} onOpenChange={setOpenD}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] overflow-auto max-h-screen">
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>Edit Product</DialogTitle>
@@ -67,45 +106,90 @@ const DashNav = () => {
                 done.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4">
-              <div className="grid gap-3">
-                <Label htmlFor="name-1">Name</Label>
-                <Input
-                  id="name-1"
-                  onChange={handleChange}
-                  value={formData.name || ""}
-                  name="name"
-                  placeholder="Name"
-                />
-              </div>
-              <div className="grid gap-3">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  // onChange={handleChange}
-                  disabled
-                  value={session.user.email}
-                  name="email"
-                  placeholder="Email"
-                />
-              </div>
-              <div className="grid gap-3">
-                <Label htmlFor="image">Image</Label>
-                <Input
-                  id="image"
-                  onChange={handleChange}
-                  value={formData.image || ""}
-                  name="image"
-                  placeholder="Image Link"
-                />
+            <div>
+              <div className="flex flex-col gap-6">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    onChange={handleChange}
+                    value={formData.name || ""}
+                    name="name"
+                    id="name"
+                    type="text"
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="image">Image</Label>
+                  <Input
+                    onChange={handleChange}
+                    value={formData.image || ""}
+                    name="image"
+                    id="image"
+                    type="text"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    disabled
+                    value={session.user.email ?? ""}
+                    name="email"
+                    placeholder="m@example.com"
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    type="number"
+                    onChange={handleChange}
+                    value={formData.phone || ""}
+                    name="phone"
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Input
+                    id="address"
+                    type="text"
+                    onChange={handleChange}
+                    value={formData.address || ""}
+                    name="address"
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <div className="flex items-center">
+                    <Label htmlFor="password">Password</Label>
+                  </div>
+                  <Input
+                    onChange={handleChange}
+                    value={formData.password || ""}
+                    name="password"
+                    id="password"
+                    type="password"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <div className="flex items-center">
+                    <Label htmlFor="cpassword">Confirm Password</Label>
+                  </div>
+                  <Input name="cpassword" id="cpassword" type="password" />
+                </div>
               </div>
             </div>
             <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DialogClose>
-              {/* <Button  type="submit" >Save changes</Button> */}
-              <Button type="submit">Save changes</Button>
+              <div className="mt-3">
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button type="submit">Save changes</Button>
+              </div>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -117,7 +201,7 @@ const DashNav = () => {
             <div className=" min-h-20 min-w-20 relative">
               <Image
                 fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="rounded-full min-h-20 min-w-20 object-cover object-center"
                 src={session.user.image}
                 alt=""

@@ -36,7 +36,7 @@ export default async function RootLayout({ children }) {
           <StoreWrapper>
             <ThemeProvider>
               <Navbar />
-              <main className="flex-1">{children}</main>
+              <main className="flex-1 background-image">{children}</main>
               <Footer />
             </ThemeProvider>
           </StoreWrapper>

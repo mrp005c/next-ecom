@@ -47,6 +47,10 @@ const Navbar = () => {
     }
   };
 
+  useEffect(() => {
+    handleCartLoad();
+  }, []);
+
   // cart remove
   const handleRomoveFromCart = async (newCartItem) => {
     if (!session) {
@@ -75,7 +79,7 @@ const Navbar = () => {
       const res = await add.json();
       if (res.success) {
         toast.success(res.message);
-        await handleCartLoad();
+        dispatch(fetchCart(session.user.id));
       } else {
         console.log("object");
         toast.error(res.message);
@@ -355,16 +359,35 @@ const Navbar = () => {
           </span>
         </div>
         <div className="space-y-2 overflow-auto flex-1 bg-violet-100 h-[calc(100%-120px)]">
-          {cartItems &&
+          {cartItems && cartItems.length > 0 ? (
             cartItems.map((item) => (
               <CartProductItem
                 key={item.cartP}
                 item={item}
                 handleRomoveFromCart={handleRomoveFromCart}
               />
-            ))}
+            ))
+          ) : (
+            <h1>No item to show!</h1>
+          )}
         </div>
-        <Button className={"mx-auto my-2"}>Check Out</Button>
+        <div className="calculate flex-between justify-end text-xs font-bold gap-3 flex-wrap px-2 bg-background py-2 rounded-sm">
+          <span>Items: {cartItems && cartItems.length}</span>
+          <span>
+            Total Price:{" "}
+            {cartItems &&
+              cartItems.length > 0 &&
+              cartItems.reduce((a, b) => a + b.price, 0)}
+          </span>
+        </div>
+        <Link
+          href={"/order"}
+          className={
+            "mx-auto mt-3 flex w-fit  px-3 py-2 rounded-md text-accent bg-accent-foreground "
+          }
+        >
+          Check Out
+        </Link>
       </div>
     </header>
   );
