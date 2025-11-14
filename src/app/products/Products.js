@@ -10,7 +10,7 @@ import React, { useEffect, useState } from "react";
 import { IoReloadCircleOutline } from "react-icons/io5";
 import { useDispatch, useSelector } from "react-redux";
 
-const Page = () => {
+const ProductPage = () => {
   const dispatch = useDispatch();
   const router = useRouter();
   const { items, loading, error } = useSelector((state) => state.products);
@@ -58,4 +58,4 @@ const Page = () => {
   );
 };
 
-export default Page;
+export default ProductPage;

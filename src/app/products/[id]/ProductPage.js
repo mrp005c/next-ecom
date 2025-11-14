@@ -1,4 +1,5 @@
 "use client";
+
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
@@ -14,8 +15,8 @@ import { fetchCart } from "@/store/cartSlice";
 // css
 import styles from "./id.module.css";
 
-const Page = () => {
-  const params = useParams();
+const ProductPage = ({id}) => {
+  // const params = useParams();
   const router = useRouter();
   const [item, setItem] = useState();
   const [success, setSuccess] = useState(true);
@@ -46,7 +47,7 @@ const Page = () => {
     };
     try {
       const data = await fetch(
-        `/api/products/product?productId=${params.id}`,
+        `/api/products/product?productId=${id}`,
         requestOptions
       );
       const res = await data.json();
@@ -75,7 +76,6 @@ const Page = () => {
     if (startX - endX > 50) nextImage(); // swipe left
     if (endX - startX > 50) prevImage(); // swipe right
   };
-
 
   const nextImage = () => setImageIndex((c) => (c + 1) % item.image.length);
   const prevImage = () =>
@@ -240,4 +240,5 @@ const Page = () => {
   );
 };
 
-export default Page;
+export default ProductPage;
+
