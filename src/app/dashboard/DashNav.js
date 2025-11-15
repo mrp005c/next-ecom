@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import Image from "next/image";
+import LoadingOverlay from "@/components/modules/LoadingOverlay";
 
 const DashNav = () => {
   const { data: session, status, update } = useSession();
@@ -89,7 +90,7 @@ const DashNav = () => {
   }, [status, router]);
 
   if (status === "loading") {
-    return <div>Loading your page</div>;
+    return <LoadingOverlay show={true} message={"Loading..."}/>
   }
 
   return (

@@ -2,7 +2,8 @@
 
 import ProductPage from "./ProductPage";
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+    const params = await props.params;
     const myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
 
@@ -40,7 +41,8 @@ export async function generateMetadata({ params }) {
 }
 
 
-export default async function Page({ params }) {
+export default async function Page(props) {
+    const params = await props.params;
     const id = await params.id;
     return <ProductPage id={params.id} />;
 }

@@ -285,7 +285,7 @@ const Navbar = () => {
               <li>
                 <Link
                   className="hover:bg-gray-400 rounded-md transition-all active:bg-gray-700 p-1"
-                  href="/#h"
+                  href="/"
                 >
                   Home
                 </Link>

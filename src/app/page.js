@@ -190,7 +190,7 @@ export default function Home() {
       </section>
 
       {/* about section  */}
-      <section id="about-us" className="min-h-[500px] pt-16 py-4">
+      <section id="about-us" className="min-h-[500px] pt-16 py-4 bg-gray-700 bg-linear-65 from-red-500 to-blue-500">
         <div className="flex-center items-stretch flex-col md:flex-row">
           {/* left side */}
           <div className="left w-full flex-1  max-w-[700px] flex justify-center flex-col gap-4 p-3">
@@ -223,7 +223,7 @@ export default function Home() {
         </div>
       </section>
       {/* Contact section  */}
-      <section id="contact" className="min-h-[500px] pt-16 bg-violet-300">
+      <section id="contact" className="min-h-[500px] pt-16 bg-white bg-linear-65 from-cyan-400 to-pink-500">
         <h2 className="w-fit mx-auto py-3 text-2xl font-bold">Contact Us</h2>
 
         <div className="flex-center items-stretch flex-col md:flex-row relative ">
@@ -295,7 +295,7 @@ export default function Home() {
       {/* about section  */}
       <section
         id="services"
-        className="min-h-[500px] p-4 pt-16 bg-violet-200 flex-col relative"
+        className="min-h-[500px] p-4 pt-16 bg-gray-700 bg-linear-65 from-green-500 to-blue-500 flex-col relative"
       >
         <h2 className="w-fit mx-auto py-3 text-2xl font-bold">
           Recently Added Products
