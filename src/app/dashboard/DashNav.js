@@ -204,7 +204,7 @@ const DashNav = () => {
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="rounded-full min-h-20 min-w-20 object-cover object-center"
-                src={session.user.image}
+                src={session.user.image || "/profilea.jpg"}
                 alt=""
               />
             </div>

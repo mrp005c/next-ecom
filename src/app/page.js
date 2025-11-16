@@ -23,7 +23,7 @@ export default function Home() {
   const router = useRouter();
   const { data: session } = useSession();
   const { items, loading, error } = useSelector((state) => state.products);
-  const [homeItems, setHomeItems] = useState();
+  const [homeItems, setHomeItems] = useState([]);
   const [load, setload] = useState(false);
   const scrollRef = useRef(null);
   const [scrollInfo, setScrollInfo] = useState({
@@ -66,13 +66,12 @@ export default function Home() {
 
   useEffect(() => {
     let a = async () => {
-      if (items.length > 0) {
+      if (items && items.length > 0) {
         setHomeItems(items.filter((item) => item.inStock).slice(-10));
       }
     };
     a();
   }, [items]);
-  const i = [...items];
 
   // 2️⃣ Define functions to scroll left/right
   const scrollLeft = () => {
@@ -190,7 +189,10 @@ export default function Home() {
       </section>
 
       {/* about section  */}
-      <section id="about-us" className="min-h-[500px] pt-16 py-4 bg-gray-700 bg-linear-65 from-red-500 to-blue-500">
+      <section
+        id="about-us"
+        className="min-h-[500px] pt-16 py-4 bg-gray-700 bg-linear-65 from-red-500 to-blue-500"
+      >
         <div className="flex-center items-stretch flex-col md:flex-row">
           {/* left side */}
           <div className="left w-full flex-1  max-w-[700px] flex justify-center flex-col gap-4 p-3">
@@ -223,7 +225,10 @@ export default function Home() {
         </div>
       </section>
       {/* Contact section  */}
-      <section id="contact" className="min-h-[500px] pt-16 bg-white bg-linear-65 from-cyan-400 to-pink-500">
+      <section
+        id="contact"
+        className="min-h-[500px] pt-16 bg-white bg-linear-65 from-cyan-400 to-pink-500"
+      >
         <h2 className="w-fit mx-auto py-3 text-2xl font-bold">Contact Us</h2>
 
         <div className="flex-center items-stretch flex-col md:flex-row relative ">
@@ -327,7 +332,7 @@ export default function Home() {
             ref={scrollRef}
             className={`flex bg-violet-100 p-4 gap-3 rounded-md w-full overflow-auto items-center ${styles.hidescrollbar}`}
           >
-            {homeItems
+            {homeItems && homeItems.length > 0
               ? homeItems.map((item) => {
                   return (
                     <div key={item.productId} className="shrink-0">

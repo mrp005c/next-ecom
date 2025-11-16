@@ -495,7 +495,7 @@ const AdminPage = () => {
             width={80}
             className="rounded-full  object-cover h-20 w-20"
             src={session.user.image || "/profilea.jpg"}
-            alt=""
+            alt="sdfsdf"
           />
           <div className="flex flex-col">
             <span className="font-bold text-lg">

@@ -7,7 +7,7 @@ export const fetchProducts = createAsyncThunk("products/fetchProducts", async ()
   if (data.success) {
     return data.result;
   }
-  return;
+  return [];
 });
 
 const productSlice = createSlice({

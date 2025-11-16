@@ -1,10 +1,7 @@
 "use client";
-import LoadingOverlay from "@/components/modules/LoadingOverlay";
 import Product from "@/components/modules/Product";
 import SkeletonProduct from "@/components/modules/SkeletonProduct";
-import { Button } from "@/components/ui/button";
 import { fetchProducts } from "@/store/productSlice";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { IoReloadCircleOutline } from "react-icons/io5";
@@ -12,12 +9,11 @@ import { useDispatch, useSelector } from "react-redux";
 
 const ProductPage = () => {
   const dispatch = useDispatch();
-  const router = useRouter();
   const { items, loading, error } = useSelector((state) => state.products);
 
- const loadProducts = async () => {
+  const loadProducts = async () => {
     dispatch(fetchProducts());
-  }
+  };
 
   useEffect(() => {
     const a = async () => {
@@ -27,13 +23,6 @@ const ProductPage = () => {
       a();
     }
   }, []);
-
-
-  
-   if (loading) {
-    // return <LoadingOverlay/>
-   }
-  
 
   return (
     <div className=" container mx-auto">
@@ -47,12 +36,13 @@ const ProductPage = () => {
         </button>
       </div>
       <div className="flex-center flex-wrap gap-3 text-black px-3 py-2">
-        {(items && !loading) ? (
+        {items.length > 0 && !loading ? (
           items.map((item) => {
             return <Product key={item.productId} item={item} />;
           })
-        ): <SkeletonProduct/>}
-       
+        ) : (
+          <SkeletonProduct />
+        )}
       </div>
     </div>
   );
